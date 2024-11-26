@@ -78,7 +78,7 @@ const stockManager = {
 
     buyItem: async (req, res) => {
 
-        const { idImage, amount, userId } = req.body;
+        const { idImage, userId } = req.body;
 
         if (!idImage) {
             return res.status(500).json({ message: "Estamos com problemas no servidor, tente novamente mais tarde.", sucess: false });
@@ -86,10 +86,6 @@ const stockManager = {
 
         if (!userId) {
             return res.status(401).json({ message: "Faça Login para continuar", sucess: false });
-        }
-
-        if (!amount || amount < 1) {
-            return res.status(409).json({ message: "Insira uma quantidade válida" });
         }
 
         try {
@@ -104,13 +100,13 @@ const stockManager = {
             const searchItem = await Stock.findById(idImage);
             const stockAmount = searchItem.stockQTD
 
-            if (amount > stockAmount) {
-                return res.status(409).json({ message: "Peça uma quantidade que esteja disponivel no estoque.", sucess: false, stock: stockAmount, });
+            if (stockAmount <= 0) {
+                return res.status(409).json({ message: "Infelizmente estamos sem estoque desse produto no momento", sucess: false, stock: stockAmount, });
             }
 
             const newStock = await Stock.findOneAndUpdate(
                 { _id: idImage },
-                { $inc: { stockQTD: -amount } },
+                { $inc: { stockQTD: -1 } },
                 { new: true }
             );
 
@@ -119,7 +115,7 @@ const stockManager = {
                 return res.status(400).json({message: "Estamos com problemas tente novamente mais tarde.", sucess:false});
             }
 
-            return res.status(200).json({message:"Parabéns pela compra!", sucess:true});
+            return res.status(200).json({message:"Parabéns! Seu pedido foi reservado com sucesso.", sucess:true});
 
         } catch (err) {
             console.log(err)
