@@ -78,11 +78,16 @@ const stockManager = {
 
     buyItem: async (req, res) => {
 
-        const { idImage, userId } = req.body;
+        const { idImage, userId, amount } = req.body;
 
         if (!idImage) {
             return res.status(500).json({ message: "Estamos com problemas no servidor, tente novamente mais tarde.", sucess: false });
         }
+
+        if (!amount || amount <= 0) {
+            return res.status(401).json({ message: "Insira uma quantidade válida de produtos", sucess: false });
+        }
+
 
         if (!userId) {
             return res.status(401).json({ message: "Faça Login para continuar", sucess: false });
@@ -93,12 +98,17 @@ const stockManager = {
             const verifyUser = await User.findById(userId);
 
             if (!verifyUser) {
-                console.log(verifyUser)
-                return res.status(401).json({ message: "Faça login novamente.", sucess: false })
+                console.log(verifyUser);
+                return res.status(401).json({ message: "Faça login novamente.", sucess: false });
             }
 
             const searchItem = await Stock.findById(idImage);
+
             const stockAmount = searchItem.stockQTD
+
+            if (amount > stockAmount) {
+                return res.status(401).json({ message: "Infelizmente não temos essá quantidade no estoque", sucess: false, stockAmount });
+            }
 
             if (stockAmount <= 0) {
                 return res.status(409).json({ message: "Infelizmente estamos sem estoque desse produto no momento", sucess: false, stock: stockAmount, });
@@ -106,16 +116,16 @@ const stockManager = {
 
             const newStock = await Stock.findOneAndUpdate(
                 { _id: idImage },
-                { $inc: { stockQTD: -1 } },
+                { $inc: { stockQTD: -amount } },
                 { new: true }
             );
 
-            if(!newStock){
+            if (!newStock) {
                 console.log(newStock)
-                return res.status(400).json({message: "Estamos com problemas tente novamente mais tarde.", sucess:false});
+                return res.status(400).json({ message: "Estamos com problemas tente novamente mais tarde.", sucess: false });
             }
 
-            return res.status(200).json({message:"Parabéns! Seu pedido foi reservado com sucesso.", sucess:true});
+            return res.status(200).json({ message: "Parabéns! Seu pedido foi reservado com sucesso.", sucess: true });
 
         } catch (err) {
             console.log(err)
